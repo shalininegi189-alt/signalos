@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SignalOS Dehradun - a city run like an operating system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header class="gantry">
+  <div class="brand">
+    <svg width="34" height="46" viewBox="0 0 34 46" aria-hidden="true">
+      <rect x="2" y="2" width="30" height="42" rx="7" fill="#12161a" stroke="#fff" stroke-width="2"/>
+      <circle cx="17" cy="12" r="5.2" fill="#e2373c"/><circle cx="17" cy="23" r="5.2" fill="#f2a007"/><circle cx="17" cy="34" r="5.2" fill="#26a96c"/>
+    </svg>
+    <div><h1>SignalOS</h1><small>Dehradun's traffic, run like an operating system</small></div>
+  </div>
+  <nav class="plates" role="tablist" aria-label="Sections">
+    <button class="plate" role="tab" data-tab="command" aria-selected="true">Command centre</button>
+    <button class="plate" role="tab" data-tab="os" aria-selected="false">OS lab</button>
+    <button class="plate" role="tab" data-tab="db" aria-selected="false">Database lab</button>
+    <button class="plate" role="tab" data-tab="analytics" aria-selected="false">Analytics</button>
+    <button class="plate" role="tab" data-tab="about" aria-selected="false">Syllabus map</button>
+  </nav>
+  <div class="pulse" id="pulse"><i></i><span id="pulse-text">connecting</span></div>
+</header>
+
+<main>
+  <!-- ============================================================ COMMAND -->
+  <section id="tab-command" class="tab on">
+    <div class="cc">
+      <div>
+        <div class="stage">
+          <div class="vms" id="vms"><span class="tag">SIGNALOS</span><span id="vms-text">Starting up</span></div>
+          <canvas id="map" aria-label="Live map of the city with intersections, signals and vehicles"></canvas>
+          <div class="legend">
+            <span><i class="dot" style="background:#e9edf0;border:1px solid #888"></i>car</span>
+            <span><i class="dot" style="background:var(--warn)"></i>bus</span>
+            <span><i class="dot" style="background:#c97b3a"></i>truck</span>
+            <span><i class="dot" style="background:#fff;border:2px solid var(--stop)"></i>ambulance</span>
+            <span><i class="dot" style="background:repeating-linear-gradient(45deg,var(--stop) 0 3px,#fff 3px 6px)"></i>gridlock</span>
+            <span><i class="dot" style="background:var(--warn);border:1px solid #333"></i>closed lane</span>
+            <span>Click a junction to inspect its scheduler. Traffic keeps left.</span>
+            <span><b>Schematic of Dehradun:</b> real chowks, approximate layout, not to scale.</span>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="panel"><div class="sign"><span>Vehicles in the city</span></div><div class="body" id="ch-vehicles"></div></div>
+          <div class="panel"><div class="sign"><span>Throughput</span><small>exits per 10 ticks</small></div><div class="body" id="ch-throughput"></div></div>
+          <div class="panel"><div class="sign"><span>Average wait at a light</span><small>ticks</small></div><div class="body" id="ch-wait"></div></div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="panel"><div class="kpis" id="kpis"></div></div>
+
+        <div class="panel" id="controls">
+          <div class="sign"><span>Control room</span><small id="ctl-state"></small></div>
+          <div class="body stack">
+            <div class="field"><span class="lbl">Signal scheduling policy</span>
+              <div class="seg" id="seg-policy"></div>
+              <span class="tiny" id="policy-desc"></span></div>
+            <div class="field" id="quantum-field"><label for="rng-quantum">Green time per turn (RR quantum): <b id="quantum-val">4</b> ticks</label>
+              <input type="range" id="rng-quantum" min="1" max="10" value="4"></div>
+            <label class="switch"><input type="checkbox" id="sw-emerg" checked> Ambulances pre-empt the signals</label>
+            <div class="field"><span class="lbl">Gridlock handling</span>
+              <div class="seg" id="seg-dl">
+                <button data-v="off" aria-pressed="false">Ignore</button>
+                <button data-v="detect" aria-pressed="true">Detect and recover</button>
+                <button data-v="avoid" aria-pressed="false">Avoid</button>
+              </div></div>
+            <div class="field"><label for="rng-demand">Traffic demand: <b id="demand-val">1.6</b>x</label>
+              <input type="range" id="rng-demand" min="0" max="4" step="0.1" value="1.6"></div>
+            <div class="field"><label for="rng-speed">Simulation speed: <b id="speed-val">1</b>x</label>
+              <input type="range" id="rng-speed" min="0.5" max="4" step="0.5" value="1"></div>
+            <div class="row"><button class="btn small" id="btn-pause">Pause</button></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="sign warn"><span>Make something happen</span></div>
+          <div class="body actions">
+            <button class="btn" data-act="ambulance">Send an ambulance</button>
+            <button class="btn" data-act="rushhour">Start rush hour</button>
+            <button class="btn" data-act="accident">Close a lane</button>
+            <button class="btn danger" data-act="gridlock">Force a gridlock</button>
+            <button class="btn" data-act="reset" style="grid-column: span 2">Reset the city</button>
+          </div>
+        </div>
+
+        <div class="panel" id="dehradun">
+          <div class="sign warn"><span>Dehradun demand</span><small>scenarios and field data</small></div>
+          <div class="body stack">
+            <div class="field"><span class="lbl">Scenario</span><div class="seg" id="seg-scn"></div><span class="tiny" id="scn-desc"></span></div>
+            <div class="field"><span class="lbl">Field traffic counts (vehicles per hour at entry points)</span>
+              <div class="row"><a class="btn small" href="/api/real/template.csv" download>Template</a>
+                <label class="btn small" for="counts-file">Upload counts</label><input type="file" id="counts-file" accept=".csv,text/csv" hidden>
+                <button class="btn small" id="counts-clear">Use defaults</button></div>
+              <span class="tiny" id="counts-msg">Using the built-in weights.</span></div>
+            <div class="row"><a class="btn small primary" href="/api/export/signal-plan.csv?cycle=120" download>Download signal-timing plan (CSV)</a></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="sign guide"><span>Scheduler <b id="sched-node">Clock Tower</b></span><small id="sched-policy"></small></div>
+          <div class="body" id="sched-body"></div>
+        </div>
+
+        <div class="panel"><div class="sign"><span>Event log</span></div><ul class="log" id="log"></ul></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ================================================================ OS -->
+  <section id="tab-os" class="tab">
+    <p class="lead">Four operating-system modules run the city. Each page below shows the live system and lets you experiment with it.</p>
+    <div class="subnav" role="tablist" id="os-nav">
+      <button role="tab" data-sub="os-arena" aria-selected="true">CPU scheduling</button>
+      <button role="tab" data-sub="os-sync" aria-selected="false">Synchronisation</button>
+      <button role="tab" data-sub="os-dead" aria-selected="false">Deadlock</button>
+      <button role="tab" data-sub="os-mem" aria-selected="false">Memory</button>
+    </div>
+    <div id="os-arena" class="sub on"></div>
+    <div id="os-sync" class="sub"></div>
+    <div id="os-dead" class="sub"></div>
+    <div id="os-mem" class="sub"></div>
+  </section>
+
+  <!-- ================================================================ DB -->
+  <section id="tab-db" class="tab">
+    <p class="lead">Every trip, signal change, fine and parking event lands in a SQLite database. These pages open up the six database modules behind it.</p>
+    <div class="subnav" role="tablist" id="db-nav">
+      <button role="tab" data-sub="db-schema" aria-selected="true">Schema</button>
+      <button role="tab" data-sub="db-sql" aria-selected="false">SQL console</button>
+      <button role="tab" data-sub="db-tx" aria-selected="false">Transactions</button>
+      <button role="tab" data-sub="db-conc" aria-selected="false">Concurrency</button>
+      <button role="tab" data-sub="db-idx" aria-selected="false">Indexing</button>
+      <button role="tab" data-sub="db-trg" aria-selected="false">Triggers</button>
+      <button role="tab" data-sub="db-rec" aria-selected="false">Crash recovery</button>
+    </div>
+    <div id="db-schema" class="sub on"></div>
+    <div id="db-sql" class="sub"></div>
+    <div id="db-tx" class="sub"></div>
+    <div id="db-conc" class="sub"></div>
+    <div id="db-idx" class="sub"></div>
+    <div id="db-trg" class="sub"></div>
+    <div id="db-rec" class="sub"></div>
+  </section>
+
+  <section id="tab-analytics" class="tab"><div id="analytics-body"></div></section>
+  <section id="tab-about" class="tab"><div id="about-body"></div></section>
+</main>
+
+<script src="/static/js/charts.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/oslab.js"></script>
+<script src="/static/js/dblab.js"></script>
+<script src="/static/js/pages.js"></script>
+<script src="/static/js/dehradun.js"></script>
+</body>
+</html>
